@@ -56,15 +56,15 @@
       bottom: 25px;
       right: 25px;
       z-index: 999;
-      width: 48px;
-      height: 48px;
+      width: 50px;
+      height: 50px;
       border-radius: 50%;
       background: var(--gold-gradient);
       border: none;
-      display: none; /* Se muestra al abrir el sobre */
+      display: none;
       justify-content: center;
       align-items: center;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.3);
       cursor: pointer;
       transition: transform 0.3s ease;
     }
@@ -72,8 +72,8 @@
       transform: scale(1.1);
     }
     #music-toggle svg {
-      width: 22px;
-      height: 22px;
+      width: 24px;
+      height: 24px;
       fill: #291d04;
     }
 
@@ -89,7 +89,7 @@
       justify-content: center;
       align-items: center;
       overflow: hidden;
-      transition: visibility 1.2s;
+      transition: opacity 0.8s ease, visibility 0.8s ease;
     }
 
     .envelope-door {
@@ -97,9 +97,9 @@
       top: 0;
       width: 50.5%;
       height: 100%;
-      background: radial-gradient(circle at center, #1b1714 0%, #0a0908 100%);
+      background: radial-gradient(circle at center, #1c1815 0%, #0a0908 100%);
       z-index: 2;
-      transition: transform 1.4s cubic-bezier(0.77, 0, 0.175, 1);
+      transition: transform 1.2s cubic-bezier(0.77, 0, 0.175, 1);
     }
     .door-left { left: 0; border-right: 1px solid rgba(212, 175, 55, 0.25); }
     .door-right { right: 0; border-left: 1px solid rgba(212, 175, 55, 0.25); }
@@ -165,12 +165,46 @@
       50% { opacity: 1; }
     }
 
-    .opening .door-left { transform: translateX(-101%); }
-    .opening .door-right { transform: translateX(101%); }
+    /* Animación al abrir */
+    .opening .door-left { transform: translateX(-102%); }
+    .opening .door-right { transform: translateX(102%); }
     .opening .wax-seal-wrapper {
       transform: scale(0);
       opacity: 0;
       transition: all 0.6s cubic-bezier(0.6, -0.28, 0.735, 0.045);
+    }
+
+    /* ====================================================
+       CONTENEDOR DE CORAZONES VOLADORES (NATIVO)
+       ==================================================== */
+    #hearts-container {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 99990;
+      overflow: hidden;
+    }
+
+    .floating-heart {
+      position: absolute;
+      bottom: -50px;
+      user-select: none;
+      animation: floatUp 4.5s linear forwards;
+      opacity: 0.9;
+    }
+
+    @keyframes floatUp {
+      0% {
+        transform: translateY(0) scale(0.6) rotate(0deg);
+        opacity: 0.9;
+      }
+      50% {
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(-110vh) scale(1.3) rotate(35deg);
+        opacity: 0;
+      }
     }
 
     /* ====================================================
@@ -463,7 +497,7 @@
       display: inline-block;
     }
 
-    /* Lightbox modal */
+    /* Modal de fotos en grande */
     #lightbox {
       position: fixed;
       inset: 0;
@@ -480,18 +514,15 @@
       max-height: 90vh;
       border-radius: 12px;
       box-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
-      animation: zoomIn 0.3s ease;
-    }
-
-    @keyframes zoomIn {
-      from { transform: scale(0.85); opacity: 0; }
-      to { transform: scale(1); opacity: 1; }
     }
   </style>
 </head>
 <body>
 
-  <!-- Audio de fondo (Desde Que Te Tengo - Carin Leon) -->
+  <!-- Contenedor nativo para la lluvia de corazones -->
+  <div id="hearts-container"></div>
+
+  <!-- Audio de fondo -->
   <audio id="wedding-audio" loop preload="auto">
     <source src="musica.mp3" type="audio/mpeg">
   </audio>
@@ -624,17 +655,19 @@
     <div class="monogram" data-aos="zoom-in">R & A</div>
   </footer>
 
-  <!-- Scripts: Confetti y Animaciones AOS -->
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <!-- Librería AOS para Scroll -->
   <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
 
   <script>
-    AOS.init({
-      once: true,
-      offset: 50,
-      duration: 900,
-      easing: 'ease-out-cubic'
-    });
+    // Inicializar animaciones de scroll
+    try {
+      AOS.init({
+        once: true,
+        offset: 40,
+        duration: 800,
+        easing: 'ease-out-cubic'
+      });
+    } catch(e) {}
 
     function openPhoto(src) {
       document.getElementById('lightbox-img').src = src;
@@ -645,61 +678,62 @@
     const envelope = document.getElementById('envelope-screen');
     const audio = document.getElementById('wedding-audio');
     const musicBtn = document.getElementById('music-toggle');
+    const heartsContainer = document.getElementById('hearts-container');
 
-    // 1. Apertura con lluvia de Corazones y Polvo de Oro (7 segundos)
-    sealBtn.addEventListener('click', () => {
-      // Iniciar música
-      audio.play().catch(() => {});
-      musicBtn.style.display = 'flex';
+    // Función nativa para generar corazones continuos por 7 segundos
+    function triggerHeartsRain() {
+      const heartSymbols = ['❤️', '💛', '✨', '💖'];
+      const endTime = Date.now() + 7000; // 7 segundos exactos
 
-      // Disparar animación de confeti con corazones durante 7 segundos
-      const duration = 7 * 1000;
-      const end = Date.now() + duration;
-
-      // Forma de corazón para confetti
-      const heartShape = confetti.shapeFromPath({
-        path: 'M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'
-      });
-
-      (function frame() {
-        // Lanzamiento desde la izquierda
-        confetti({
-          particleCount: 3,
-          angle: 60,
-          spread: 55,
-          origin: { x: 0, y: 0.6 },
-          colors: ['#e63946', '#d4af37', '#f4a261', '#e76f51'],
-          shapes: [heartShape, 'circle'],
-          scalar: 1.2
-        });
-        // Lanzamiento desde la derecha
-        confetti({
-          particleCount: 3,
-          angle: 120,
-          spread: 55,
-          origin: { x: 1, y: 0.6 },
-          colors: ['#e63946', '#d4af37', '#f4a261', '#e76f51'],
-          shapes: [heartShape, 'circle'],
-          scalar: 1.2
-        });
-
-        if (Date.now() < end) {
-          requestAnimationFrame(frame);
+      const interval = setInterval(() => {
+        if (Date.now() > endTime) {
+          clearInterval(interval);
+          return;
         }
-      }());
 
+        for (let i = 0; i < 3; i++) {
+          const heart = document.createElement('div');
+          heart.classList.add('floating-heart');
+          heart.innerText = heartSymbols[Math.floor(Math.random() * heartSymbols.length)];
+          heart.style.left = Math.random() * 100 + 'vw';
+          heart.style.fontSize = (Math.random() * 18 + 16) + 'px';
+          heart.style.animationDuration = (Math.random() * 2 + 3.5) + 's';
+
+          heartsContainer.appendChild(heart);
+
+          // Remover del DOM al terminar animación
+          setTimeout(() => {
+            heart.remove();
+          }, 5000);
+        }
+      }, 250);
+    }
+
+    // Apertura Garantizada
+    sealBtn.addEventListener('click', () => {
+      // 1. Iniciar música
+      try {
+        audio.play();
+        musicBtn.style.display = 'flex';
+      } catch (err) {}
+
+      // 2. Disparar lluvia de corazones
+      triggerHeartsRain();
+
+      // 3. Abrir puertas del sobre
       envelope.classList.add('opening');
 
+      // 4. Remover el sobre sin fallos
       setTimeout(() => {
         envelope.style.opacity = '0';
         setTimeout(() => {
           envelope.style.display = 'none';
-          AOS.refresh();
-        }, 600);
-      }, 900);
+          try { AOS.refresh(); } catch(e) {}
+        }, 700);
+      }, 800);
     });
 
-    // Control manual de música
+    // Control de música
     musicBtn.addEventListener('click', () => {
       if (audio.paused) {
         audio.play();
@@ -710,7 +744,7 @@
       }
     });
 
-    // 2. Contador regresivo
+    // Contador regresivo
     const targetWedding = new Date('December 26, 2026 16:00:00').getTime();
 
     function refreshClock() {
